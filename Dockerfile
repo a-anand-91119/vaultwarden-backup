@@ -4,13 +4,30 @@ FROM python:3.11-slim-bookworm
 WORKDIR /app
 
 # Install dependencies: cron, gpg (for encryption), docker-cli (to talk to host daemon), gzip, tar
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    cron \
-    gnupg \
-    gzip \
-    tar \
-    docker-ce-cli \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    # Install prerequisites for Docker repo
+    apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
+    # Add Docker's official GPG key
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    # Set up the Docker repository
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    # Update apt package index again after adding repo
+    apt-get update && \
+    # Install the required packages
+    apt-get install -y --no-install-recommends \
+      cron \
+      gnupg `# Already installed as prereq, but ensures it stays` \
+      gzip \
+      tar \
+      docker-ce-cli \
+    && \
+    # Clean up
+    rm -rf /var/lib/apt/lists/*
 
 # Copy application files
 COPY requirements.txt requirements.txt
