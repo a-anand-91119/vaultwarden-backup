@@ -20,6 +20,12 @@ vaultwarden:
   data_dir: /path/to/vaultwarden/data # CHANGE THIS (e.g., /data for Docker, /srv/vw/data for host)
 
 backup:
+  # --- Scheduling (Used when running in scheduler mode) ---
+  schedule:
+    # Interval in minutes between backup runs
+    # Example: 60 for hourly, 1440 for daily, 10 for every 10 minutes
+    interval_minutes: 1440 # Default to daily
+
   # --- Backup Destination Settings ---
   destination:
     # Type of backup destination: 'local' is currently supported.

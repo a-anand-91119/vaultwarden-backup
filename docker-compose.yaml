@@ -7,8 +7,7 @@ services:
     container_name: vaultwarden-backup
     restart: unless-stopped
     environment:
-      # Optional: Override default cron schedule (defaults to 2:30 AM daily)
-      - CRON_SCHEDULE=0 3 * * * # Example: Run daily at 3:00 AM
+      # Optional: Enable verbose script logging (defaults to false)
       - VERBOSE_LOGGING=false
       # Optional: Set container timezone
       - TZ=Asia/Kolkata

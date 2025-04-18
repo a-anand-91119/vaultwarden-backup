@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import re
 import glob
 import yaml
+import schedule
+import time
 
 # --- Constants ---
 TIMESTAMP_FORMAT = "%Y%m%dT%H%M%S"
@@ -86,12 +88,17 @@ def load_config(config_path):
         if 'data_dir' not in vw_cfg or not isinstance(vw_cfg['data_dir'], str):
              raise ValueError("Missing or invalid 'data_dir' (string) in 'vaultwarden' section.")
 
-        # Check backup section structure (similar to before, but path adjusted)
+        # Check backup section structure
         backup_cfg = config['backup']
-        required_backup_keys = ['destination', 'retention', 'restore']
+        required_backup_keys = ['schedule', 'destination', 'retention', 'restore']
         for key in required_backup_keys:
             if key not in backup_cfg or not isinstance(backup_cfg[key], dict):
                  raise ValueError(f"Missing or invalid '{key}' subsection in 'backup' section.")
+
+        # Check schedule sub-keys
+        schedule_cfg = backup_cfg['schedule']
+        if 'interval_minutes' not in schedule_cfg or not isinstance(schedule_cfg['interval_minutes'], int) or schedule_cfg['interval_minutes'] <= 0:
+             raise ValueError("Missing or invalid 'interval_minutes' (positive integer) in 'backup.schedule' section.")
 
         # Check destination sub-keys
         dest_cfg = backup_cfg['destination']
@@ -280,26 +287,40 @@ def apply_retention_policy(config):
 
 def backup(config):
     """Performs the backup process for Vaultwarden."""
-    logger.info("--- Starting Vaultwarden Backup ---")
-    start_time = datetime.now()
-
-    manage_vaultwarden_container(config, "stop")
-
-    timestamp_str = start_time.strftime(TIMESTAMP_FORMAT)
     try:
-        final_backup_path = create_backup_archive(config, timestamp_str)
-        logger.info(f"Successfully created backup: {final_backup_path}")
-    except Exception as e:
-        logger.critical(f"Backup archive creation failed: {e}. Aborting backup.")
+        logger.info("--- Starting Vaultwarden Backup ---")
+        start_time = datetime.now()
+
+        if not manage_vaultwarden_container(config, "stop"):
+            logger.error("Skipping backup run because container stop failed.")
+            manage_vaultwarden_container(config, "start")
+            return
+
+        timestamp_str = start_time.strftime(TIMESTAMP_FORMAT)
+        final_backup_path = None
+        try:
+            final_backup_path = create_backup_archive(config, timestamp_str)
+            logger.info(f"Successfully created backup: {final_backup_path}")
+        except Exception as e:
+            logger.critical(f"Backup archive creation failed: {e}. Aborting backup run.")
+            manage_vaultwarden_container(config, "start")
+            return
+
         manage_vaultwarden_container(config, "start")
-        sys.exit(1)
 
-    manage_vaultwarden_container(config, "start")
-    apply_retention_policy(config)
+        if final_backup_path:
+            apply_retention_policy(config)
 
-    end_time = datetime.now()
-    logger.info(f"--- Vaultwarden Backup Finished ---")
-    logger.info(f"Duration: {end_time - start_time}")
+        end_time = datetime.now()
+        logger.info(f"--- Vaultwarden Backup Finished ---")
+        logger.info(f"Duration: {end_time - start_time}")
+
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred during the scheduled backup run: {e}")
+        try:
+            manage_vaultwarden_container(config, "start")
+        except Exception as restart_e:
+             logger.error(f"Failed to ensure Vaultwarden container was started after backup error: {restart_e}")
 
 def restore(config, backup_id, target_dir_override, force_yes):
     """Performs the restore process for Vaultwarden."""
@@ -472,12 +493,27 @@ def restore(config, backup_id, target_dir_override, force_yes):
     logger.info(f"Duration: {end_time - start_time}")
     logger.info("Please verify Vaultwarden functionality.")
 
+def run_scheduler(config):
+    """Runs the backup function on a schedule."""
+    interval = config['backup']['schedule']['interval_minutes']
+    logger.info(f"Starting scheduler. Backup interval: {interval} minutes.")
+
+    schedule.every(interval).minutes.do(backup, config=config)
+
+    logger.info("Running initial backup job at startup...")
+    schedule.run_all()
+
+    logger.info("Scheduler started. Waiting for next scheduled run...")
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
 # --- Main Execution ---
 def main():
     global file_handler
 
-    parser = argparse.ArgumentParser(description="Manage Vaultwarden Docker container backups and restores.")
-    parser.add_argument('command', choices=['backup', 'restore'], help="The command to execute.")
+    parser = argparse.ArgumentParser(description="Manage Vaultwarden Docker container backups, restores, and scheduling.")
+    parser.add_argument('command', choices=['backup', 'restore', 'run-scheduler'], help="The command to execute (backup, restore, or run-scheduler for continuous backups).")
     parser.add_argument('--config', required=True, help="Path to the YAML configuration file (e.g., config.yaml).")
     parser.add_argument('--log-file', default=DEFAULT_LOG_FILE, help=f"Path to the log file (default: {DEFAULT_LOG_FILE}).")
     parser.add_argument('-v', '--verbose', action='store_true', help="Enable verbose (DEBUG) logging.")
@@ -513,6 +549,8 @@ def main():
         if not args.backup_id:
             parser.error("--backup-id is required for the restore command.")
         restore(config, args.backup_id, args.target_dir, args.yes)
+    elif args.command == 'run-scheduler':
+        run_scheduler(config)
     else:
         logger.error(f"Unknown command: {args.command}")
         sys.exit(1)

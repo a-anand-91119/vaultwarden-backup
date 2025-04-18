@@ -9,3 +9,4 @@
 # docker
 
 PyYAML>=5.4 # Using >=5.4 for safe_load availability and security patches
+schedule>=1.1.0

@@ -223,16 +223,17 @@ Two Docker Compose files are provided:
 
 **Running the Backup Service (`docker-compose.yaml`):**
 
-1.  Edit `docker-compose.yaml`: Set the correct `image` tag and adjust the host paths in the `volumes` section for the `backup` service.
-2.  Start the backup service in the background:
+1.  Edit `docker-compose.yaml`: Set the correct `image` tag and adjust the host paths in the `volumes` section.
+2.  Edit `config.yaml`: Set `backup.schedule.interval_minutes` to your desired frequency (e.g., `60` for hourly, `1440` for daily).
+3.  Start the backup service in the background:
     ```bash
     docker compose up -d backup
     ```
-3.  View logs:
+4.  View logs:
     ```bash
     docker compose logs -f backup
     ```
-4.  Stop the service:
+5.  Stop the service:
     ```bash
     # This stops and removes the container defined in docker-compose.yaml
     docker compose down
@@ -241,7 +242,7 @@ Two Docker Compose files are provided:
 **Running a Restore Task (`docker-compose.restore.yaml`):**
 
 1.  Edit `docker-compose.restore.yaml`: Ensure the `image` tag and host paths in the `volumes` section are correct. Make sure the config file mounted is the *same one* used for backups.
-2.  Run the restore task using `docker compose -f docker-compose.restore.yaml run`. You append the script command (`restore`) and its arguments after the service name (`restore`).
+2.  Run the restore task using `docker compose -f docker-compose.restore.yaml run`. The script command (`restore`) and its arguments are appended after the service name (`restore`).
 
     ```bash
     # Make sure Vaultwarden container is stopped if restoring to its current data dir!
