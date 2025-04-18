@@ -44,6 +44,20 @@ This Python script provides automated backup and restore capabilities for a Vaul
         *   `backup.restore.owner_uid`, `backup.restore.owner_gid`: **Important for restore:** Set these to the numeric UID and GID that the Vaultwarden container runs as (often set via `PUID` and `PGID` environment variables when starting the container). This ensures correct permissions after restoring. Leave blank to skip setting permissions (restore might fail).
 4.  **Make Executable (Optional):** `chmod +x bw_manager.py`
 
+## Configuration Note (Paths)
+
+**Crucially, how you set paths in `config.yaml` depends on how you run the script:**
+
+*   **Running Directly on Host:**
+    *   `vaultwarden.data_dir`: Set to the *actual host path* of your Vaultwarden data (e.g., `/srv/vaultwarden/data`).
+    *   `backup.destination.path`: Set to the *actual host path* for storing backups (e.g., `/mnt/backups/vaultwarden`).
+    *   `backup.restore.temp_dir`: Set to a suitable *host path* for temporary files (e.g., `/tmp/vw_restore`).
+*   **Running via Docker (`docker run` or `docker compose`):**
+    *   `vaultwarden.data_dir`: MUST match the *target path* of the data volume mount (e.g., `/data`).
+    *   `backup.destination.path`: MUST match the *target path* of the backup volume mount (e.g., `/backup`).
+    *   `backup.restore.temp_dir`: Set to a path *inside the container* (e.g., `/tmp/vw_restore_temp`).
+    *   The actual host paths are defined in the `volumes:` section of your `docker run` command or `docker-compose.yaml` file.
+
 ## Usage
 
 Use the script via the command line. Remember you might need `sudo`.

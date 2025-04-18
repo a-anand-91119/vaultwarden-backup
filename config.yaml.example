@@ -1,24 +1,36 @@
-# Bitwarden Backup Manager Configuration (YAML)
+# Vaultwarden Backup Manager Configuration (YAML)
+
+# IMPORTANT NOTE ON PATHS:
+# - When running the script DIRECTLY on the host:
+#   Paths like 'data_dir' and 'backup.destination.path' should be the ACTUAL paths on your host machine.
+# - When running the script via Docker (using docker-compose.yaml or docker run):
+#   Paths like 'data_dir' and 'backup.destination.path' MUST match the TARGET paths
+#   specified in the 'volumes' section of your docker command/compose file
+#   (e.g., '/data' and '/backup' respectively, based on the examples provided).
+
+vaultwarden:
+  # Name or ID of the running Vaultwarden Docker container (required)
+  # Example: vaultwarden
+  container_name: vaultwarden
+
+  # Full path to the directory mapped as Vaultwarden's data volume
+  # - If running script directly on host: Use the HOST path (e.g., /srv/vaultwarden/data)
+  # - If running script via Docker: Use the CONTAINER path (e.g., /data)
+  # (Required)
+  data_dir: /path/to/vaultwarden/data # CHANGE THIS (e.g., /data for Docker, /srv/vw/data for host)
 
 backup:
-  # Path to the directory containing the 'bwdata' folder and 'bitwarden.sh' script
-  # Example: /opt/bitwarden
-  install_dir: /home/ubuntu/bitwarden/vw-data
-
-  # Path to the 'bwdata' directory (usually install_dir + /bwdata)
-  # Example: /opt/bitwarden/bwdata
-  # If omitted, it defaults to {install_dir}/bwdata
-  # bw_data_path: /opt/bitwarden/bwdata
-
   # --- Backup Destination Settings ---
   destination:
     # Type of backup destination: 'local' is currently supported.
     # Future options: 'ssh', 's3'
     type: local
 
-    # Path to the directory where backup archives will be stored (for 'local' type)
-    # Example: /mnt/backups/bitwarden
-    path: /home/ubuntu/bitwarden/test/backups
+    # Path to the directory where backup archives will be stored
+    # - If running script directly on host: Use the HOST path (e.g., /mnt/backups/vaultwarden)
+    # - If running script via Docker: Use the CONTAINER path (e.g., /backup)
+    # (Required)
+    path: /path/to/your/backup/storage # CHANGE THIS (e.g., /backup for Docker, /mnt/backups for host)
 
   # --- Encryption Settings ---
   encryption:
@@ -40,15 +52,19 @@ backup:
   # --- Restore Settings ---
   restore:
     # Temporary directory for downloading/extracting backups during restore
-    # Example: /tmp/bw_restore_temp
-    temp_dir: /tmp/bw_restore_temp
+    # - If running script directly on host: Use a HOST path (e.g., /tmp/vw_restore_temp)
+    # - If running script via Docker: Use a path INSIDE the container (e.g., /tmp/vw_restore_temp)
+    # (Required)
+    temp_dir: /tmp/vw_restore_temp
 
     # --- Permissions ---
-    # User and group to set ownership on restored bwdata (requires sudo)
-    # Set these if different from the user running the script or the Bitwarden default.
+    # User and group numeric ID to set ownership on restored data_dir (requires sudo)
+    # Match the PUID/PGID environment variables used when running the container.
     # Leave blank or omit to skip explicit chown/chmod (restore might fail if permissions are wrong)
-    owner_user: ubuntu
-    owner_group: ubuntu
+    # Example: owner_uid: 1000
+    # Example: owner_gid: 1000
+    owner_uid: # e.g., 1000
+    owner_gid: # e.g., 1000
 
 notifications:
   # Placeholder for future notification settings (e.g., email, webhook)

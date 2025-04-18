@@ -1,5 +1,7 @@
 version: '3.8'
 
+# Docker Compose file specifically for running the restore task.
+
 services:
   restore:
     # --- Manual Restore Task (Run as one-off command) ---
@@ -8,13 +10,26 @@ services:
       - TZ=Asia/Kolkata
       - VERBOSE_LOGGING=true
     volumes:
+      # !!! Mount host Docker socket (required for stop/start) !!!
       - /var/run/docker.sock:/var/run/docker.sock
+      
+      # Mount configuration file (read-only)
+      # Source (Left side): Path to your config.yaml on the HOST
+      # Target (Right side): Path inside the container where the script looks for config
+      # Ensure this uses the SAME config.yaml as the backup service!
       - ./config.yaml:/config/config.yaml:ro
+      
       # Mount host backup storage directory (read-only)
-      # !!! Replace with your actual host path !!!
+      # Source (Left side): ACTUAL path to backup storage on the HOST
+      # Target (Right side): Path inside the container - must match 'backup.destination.path' in config.yaml
+      # !!! Replace left side with your actual host path !!!
       - /path/to/your/backup/storage:/backup:ro
-      # Mount the PARENT directory of the target restore location
-      # !!! Replace with your actual host path !!!
+      
+      # Mount the PARENT directory of the target restore location (read-write)
+      # Source (Left side): Path to the PARENT of Vaultwarden data on the HOST
+      # Target (Right side): Mount point inside the container (e.g., /target)
+      # The script's --target-dir argument will specify a subdirectory within this target (e.g., /target/data_dir_name)
+      # !!! Replace left side with your actual host path !!!
       - /path/to/vaultwarden/host/parent-directory:/target
 
 # The command and arguments are provided when running `docker compose run`
