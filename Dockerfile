@@ -28,12 +28,18 @@ RUN apt-get update && \
     # Clean up
     rm -rf /var/lib/apt/lists/*
 
-# Copy application files (removed entrypoint.sh)
-COPY requirements.txt requirements.txt
-COPY bw_manager.py bw_manager.py
+# Copy only pyproject.toml first to leverage Docker layer caching
+COPY pyproject.toml /app/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from pyproject.toml
+# --no-cache-dir reduces image size
+# We only install runtime dependencies, not test dependencies
+# The '.' tells pip to install the package defined in pyproject.toml
+RUN pip install --no-cache-dir .
+
+# Now copy the rest of the application code
+COPY README.md /app/
+COPY src/ /app/src/
 
 # No need to chmod entrypoint anymore
 # RUN chmod +x entrypoint.sh
@@ -47,5 +53,9 @@ VOLUME ["/config", "/data", "/backup"]
 # Remove ENTRYPOINT
 # ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Default command: Run the Python script in scheduler mode
-CMD ["python3", "/app/bw_manager.py", "run-scheduler", "--config", "/config/config.yaml"] 
+# Default command: Run the Python package module in scheduler mode
+# Set Python path so it finds the package in /app/src
+# (Note: Installing with `pip install .` might make PYTHONPATH less critical,
+# but keeping it doesn't hurt and ensures discovery if needed)
+ENV PYTHONPATH=/app
+CMD ["python3", "-m", "vaultwarden_backup_manager", "run-scheduler", "--config", "/config/config.yaml"] 

@@ -1,6 +1,14 @@
-# Vaultwarden Docker Backup & Restore Manager
+# Vaultwarden Backup & Restore Manager
 
-This Python script provides automated backup and restore capabilities for a Vaultwarden Docker container installation.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+
+This Python tool provides automated backup and restore capabilities for a Vaultwarden Docker container installation.
+
+**Project Links:**
+*   **Homepage / Primary Repo:** [GitLab (Self-Hosted)](https://gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup)
+*   **GitHub Mirror:** [GitHub](https://github.com/a-anand-91119/vaultwarden-backup)
+*   **GitLab.com Mirror:** [GitLab.com](https://gitlab.com/repo-syncer-managed-groups/vaultwarden-backup)
 
 ## Features
 
@@ -14,41 +22,57 @@ This Python script provides automated backup and restore capabilities for a Vaul
 
 ## Prerequisites
 
-*   Python 3.6+
-*   `PyYAML` Python package (`pip install PyYAML` or `pip install -r requirements.txt`)
+*   Python 3.8+ and `pip`
 *   A running Vaultwarden instance in a Docker container.
 *   Access to the Docker host machine.
 *   The `docker` command-line tool installed and accessible.
-*   Necessary command-line tools installed:
+*   Necessary command-line tools installed on the *host* where the script/container runs:
     *   `tar`, `gzip` (usually standard)
     *   `gpg` (if using encryption)
 *   **Sudo privileges are likely required** for:
-    *   Running `docker stop`/`start` commands.
-    *   The `restore` command if setting file ownership (`owner_uid`/`owner_gid` in config) or deleting existing data owned by another user.
+    *   Running `docker stop`/`start` commands via the Docker socket.
+    *   The `restore` command if setting file ownership (`owner_uid`/`owner_gid` in config) or deleting existing data owned by another user when running the script directly on the host.
 
-## Setup
+## Development Setup
 
-1.  **Copy Files:** Place `bw_manager.py` (you might want to rename it to `vaultwarden_manager.py`), `config.yaml.example`, and `requirements.txt` somewhere accessible on your Docker host.
-2.  **Install Dependencies:**
+If you want to modify or contribute to this tool:
+
+1.  **Clone Repository:** `git clone <repository-url>`
+2.  **Create Virtual Environment:**
     ```bash
-    pip install -r requirements.txt
+    python -m venv .venv
+    source .venv/bin/activate # On Linux/macOS
+    # .\.venv\Scripts\activate # On Windows
     ```
-3.  **Create Configuration:**
-    *   Copy `config.yaml.example` to `config.yaml` (or another name).
-    *   Edit `config.yaml` and fill in the required paths and settings:
-        *   `vaultwarden.container_name`: The exact name or ID of your running Vaultwarden container.
-        *   `vaultwarden.data_dir`: The full path on the **host** machine where your Vaultwarden data volume is mounted.
-        *   `backup.destination.path`: The directory where backup archives should be stored.
-        *   Configure `backup.encryption` and `backup.retention` as needed.
-        *   `backup.restore.temp_dir`: A temporary directory for restore operations.
-        *   `backup.restore.owner_uid`, `backup.restore.owner_gid`: **Important for restore:** Set these to the numeric UID and GID that the Vaultwarden container runs as (often set via `PUID` and `PGID` environment variables when starting the container). This ensures correct permissions after restoring. Leave blank to skip setting permissions (restore might fail).
-4.  **Make Executable (Optional):** `chmod +x bw_manager.py`
+3.  **Install in Editable Mode (with Test Dependencies):**
+    This command installs the package such that changes in the `src` directory are immediately reflected, and includes `pytest` for running tests.
+    ```bash
+    pip install -e '.[test]'
+    ```
+4.  **Run Tests (Optional):**
+    ```bash
+    pytest
+    ```
 
-## Configuration Note (Paths)
+## Installation (Standard User)
+
+If you just want to use the tool, you can install it directly using pip (once published or from a local clone):
+
+```bash
+# From local clone
+pip install .
+
+# From PyPI (if published)
+# pip install vaultwarden-backup-manager
+```
+
+This will install the package and its runtime dependencies (`PyYAML`, `schedule`) and make the `vaultwarden-backup` command available in your environment (or the virtual environment if used).
+
+## Configuration (`config.yaml`)
 
 **Crucially, how you set paths in `config.yaml` depends on how you run the script:**
 
-*   **Running Directly on Host:**
+*   **Running Directly on Host (Using `python -m vaultwarden_backup_manager ...`):**
     *   `vaultwarden.data_dir`: Set to the *actual host path* of your Vaultwarden data (e.g., `/srv/vaultwarden/data`).
     *   `backup.destination.path`: Set to the *actual host path* for storing backups (e.g., `/mnt/backups/vaultwarden`).
     *   `backup.restore.temp_dir`: Set to a suitable *host path* for temporary files (e.g., `/tmp/vw_restore`).
@@ -58,173 +82,152 @@ This Python script provides automated backup and restore capabilities for a Vaul
     *   `backup.restore.temp_dir`: Set to a path *inside the container* (e.g., `/tmp/vw_restore_temp`).
     *   The actual host paths are defined in the `volumes:` section of your `docker run` command or `docker-compose.yaml` file.
 
+Copy `config.yaml.example` to `config.yaml` and edit it according to your setup and the path guidance above.
+
 ## Usage
 
-Use the script via the command line. Remember you might need `sudo`.
+Use the `vaultwarden-backup` command after installation, or `python -m vaultwarden_backup_manager` if running directly from the source checkout. Remember you might need `sudo` depending on your Docker permissions setup, especially when running directly on the host.
 
-**Configuration File:** Always specify the configuration file using `--config` (e.g., `--config config.yaml`).
+**Configuration File:** Always specify the configuration file using `--config`.
 
 **Log File:** Logs are written to `vaultwarden_manager.log` by default. Change with `--log-file`.
 
 **Verbose Logging:** Add `-v` or `--verbose` for DEBUG level logging.
 
-### Backup
+### Backup (Manual)
+
+Creates a backup according to the configuration.
 
 ```bash
-# Basic backup (likely needs sudo to run docker stop/start)
-sudo ./bw_manager.py backup --config /path/to/your/config.yaml
+# Run using installed command
+sudo vaultwarden-backup backup --config /path/to/your/config.yaml
 
-# Backup with verbose logging
-sudo ./bw_manager.py backup --config /path/to/your/config.yaml -v
+# Run directly from source checkout
+# sudo python -m vaultwarden_backup_manager backup --config /path/to/your/config.yaml
+
+# Run via Docker (using docker run for a one-off backup)
+# Replace IMAGE_NAME and host paths as needed
+sudo docker run --rm -it \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -v /path/to/host/config.yaml:/config/config.yaml:ro \\
+  -v /path/to/vaultwarden/host/data-directory:/data:ro \\
+  -v /path/to/host/backup/storage:/backup \\
+  registry.gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup:latest \\
+  backup --config /config/config.yaml
 ```
-
-This will:
-1.  Stop the Vaultwarden container (`docker stop`).
-2.  Create a timestamped `.tar.gz` archive of the configured `data_dir`.
-3.  Encrypt the archive with GPG if configured.
-4.  Start the Vaultwarden container (`docker start`).
-5.  Apply the retention policy, deleting older backups in the destination path.
 
 ### Restore
 
-**WARNING:** Restore is a destructive operation. It will stop the Vaultwarden container, delete the existing data directory on the host, and replace it with the contents of the selected backup.
+Restores a specified backup.
 
-**SUDO:** You will likely need to run the restore command with `sudo`.
+**WARNING:** Destructive operation. Stops the container, deletes the target data directory (unless `--target-dir` specifies a new empty location), and restores the archive.
+**SUDO:** Likely required when running directly on host.
 
 ```bash
-# Restore the latest backup (requires confirmation)
-sudo ./bw_manager.py restore --config /path/to/your/config.yaml --backup-id latest
+# Run using installed command
+# Restore latest backup, will prompt for confirmation
+sudo vaultwarden-backup restore --config /path/to/your/config.yaml --backup-id latest
 
-# Restore a specific backup by timestamp ID (requires confirmation)
-sudo ./bw_manager.py restore --config /path/to/your/config.yaml --backup-id 20230115T103000
+# Restore specific backup, skip confirmation (DANGEROUS)
+sudo vaultwarden-backup restore --config /path/to/your/config.yaml --backup-id <TIMESTAMP_ID> --yes
 
-# Restore the latest backup, skipping confirmation (DANGEROUS!)
-sudo ./bw_manager.py restore --config /path/to/your/config.yaml --backup-id latest --yes
+# Run via Docker (using docker compose -f docker-compose.restore.yaml run)
+# Make sure docker-compose.restore.yaml volume paths are correct!
+docker compose -f docker-compose.restore.yaml run --rm restore \\
+  restore --config /config/config.yaml --backup-id latest --target-dir /target/data_dir_name
 
-# Restore TO a different target data directory path (e.g., migrating)
-# Ensure the container is NOT running and pointed to this new dir before starting it after restore
-sudo ./bw_manager.py restore --config /path/to/your/config.yaml --backup-id latest --target-dir /path/to/new/data_dir
+# Run via Docker (using docker run)
+# Replace IMAGE_NAME and host paths as needed
+sudo docker run --rm -it \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -v /path/to/host/config.yaml:/config/config.yaml:ro \\
+  -v /path/to/host/backup/storage:/backup:ro \\
+  -v /path/to/vaultwarden/host/parent-directory:/target \\
+  registry.gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup:latest \\
+  restore --config /config/config.yaml --backup-id latest --target-dir /target/data_dir_name
 ```
+*(Note: Replace `<TIMESTAMP_ID>`, `/target/data_dir_name`, image name, and host paths as needed)*
 
-This will:
-1.  Find the specified backup archive in the configured destination path.
-2.  Copy it to the configured temporary restore directory.
-3.  Decrypt it if necessary.
-4.  Stop the Vaultwarden container (`docker stop`).
-5.  **Prompt for confirmation** before deleting data (unless `--yes` is used).
-6.  Delete the existing data directory at the target path.
-7.  Extract the backup archive content into the parent of the target path, recreating the data directory.
-8.  Attempt to set ownership (`chown`) and permissions (`chmod`) on the restored data directory using the configured UID/GID (requires `sudo`).
-9.  Start the Vaultwarden container (`docker start`).
-10. Clean up the temporary directory.
+### Run Scheduler (Continuous Backups)
+
+This command runs indefinitely in the foreground, triggering backups based on `backup.schedule.interval_minutes` in the config. This is the default command run by the Docker image.
+
+```bash
+# Run using installed command (runs in foreground)
+sudo vaultwarden-backup run-scheduler --config /path/to/your/config.yaml
+
+# Run via Docker (using docker-compose.yaml - recommended)
+# Assumes docker-compose.yaml points to the correct image and host paths
+docker compose up -d backup
+
+# Run via Docker (using docker run)
+# Replace IMAGE_NAME and host paths as needed
+sudo docker run -d \\
+  --name vaultwarden-backup \\
+  --restart=unless-stopped \\
+  -e VERBOSE_LOGGING="false"   # Optional \\
+  -e TZ="Asia/Kolkata"         # Optional: Set your timezone \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -v /path/to/host/config.yaml:/config/config.yaml:ro \\
+  -v /path/to/vaultwarden/host/data-directory:/data:ro \\
+  -v /path/to/host/backup/storage:/backup \\
+  registry.gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup:latest
+  # No command needed here; the image's default CMD runs the scheduler
+```
 
 ## Automation (Scheduling Backups)
 
-You can schedule regular backups using `cron`.
+If running the script directly on the host (not via Docker), you can use `cron` to run the `vaultwarden-backup backup` command periodically.
 
-1.  Edit the crontab, likely for the `root` user or a user with passwordless `sudo` rights for `docker` commands:
-    ```bash
-    sudo crontab -e
-    ```
-2.  Add a line similar to this to run the backup daily at 2:30 AM:
-    ```cron
-    # Example: Run Vaultwarden backup daily at 2:30 AM
-    30 2 * * * /usr/bin/python3 /path/to/bw_manager.py backup --config /path/to/your/config.yaml >> /path/to/vaultwarden_manager.log 2>&1
-    ```
-    *   Adjust the paths to `python3`, `bw_manager.py` (or your renamed script), `config.yaml`, and the log file.
-    *   Ensure the command runs with sufficient privileges (e.g., via `sudo crontab` or ensuring the user can run `docker` without a password).
+Example crontab entry (run as user with sudo/docker rights):
+```cron
+# Run Vaultwarden backup daily at 2:30 AM
+30 2 * * * /path/to/your/venv/bin/vaultwarden-backup backup --config /path/to/your/config.yaml >> /path/to/vaultwarden_backup.log 2>&1
+```
 
-## Future Enhancements
-
-*   Support for SSH and S3-compatible backup destinations.
-*   More sophisticated notification options (email, webhooks).
-*   Optional database-specific backup commands (e.g., SQLite `.backup`) before archiving?
-*   More robust error handling for different storage backends.
+However, the recommended approach for automated backups is using **Docker** with `docker-compose.yaml` (or `docker run`) as shown in the "Run Scheduler" section. This runs the tool's built-in scheduler within the container.
 
 ## Docker Usage
 
-You can build and run this tool as a Docker container for automated backups or manual restores.
+You can build and run this tool as a Docker container for automated backups or manual restores. The provided `Dockerfile` sets up the necessary environment.
+
+**Image:** The examples below use the pre-built image from the GitLab registry: `registry.gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup:latest`. You can also build your own.
 
 **Building the Image:**
 
 ```bash
 # Navigate to the directory containing the Dockerfile
-docker build -t vaultwarden-backup-manager . 
+docker build -t my-vaultwarden-backup-manager .
 ```
-
-(Replace `vaultwarden-backup-manager` with your preferred image tag).
+(Replace `my-vaultwarden-backup-manager` with your preferred local image tag).
 
 ### Using `docker run`
 
-**Running the Backup Container (`docker run`):**
+See the `Backup (Manual)`, `Restore`, and `Run Scheduler` sections above for `docker run` examples. Remember to:
 
-This container runs continuously in the background, executing backups based on the cron schedule defined by the `CRON_SCHEDULE` environment variable (defaults to `30 2 * * *`).
-
-*   **Crucially**, you need to mount:
-    *   The host's Docker socket (`/var/run/docker.sock`) so the container can control the Vaultwarden container.
+*   Replace the example image name if you built your own.
+*   **Crucially**, correctly map the host paths for:
+    *   The Docker socket (`/var/run/docker.sock`).
     *   Your `config.yaml` file.
-    *   The host directory containing your Vaultwarden data (read-only).
-    *   The host directory where backups should be stored.
-
-```bash
-docker run -d \
-  --name vaultwarden-backup \
-  --restart=unless-stopped \
-  -e CRON_SCHEDULE="0 3 * * *" `# Optional: Run daily at 3:00 AM` \
-  -e VERBOSE_LOGGING="false"   `# Optional: Set to true for verbose script logs` \
-  -e TZ="America/New_York"     `# Optional: Set your timezone` \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v $(pwd)/config.yaml:/config/config.yaml:ro `# Mount config read-only` \
-  -v /path/to/vaultwarden/host/data-directory:/data:ro `# Mount data read-only for backup` \
-  -v /path/to/your/backup/storage:/backup `# Mount backup storage` \
-  vaultwarden-backup-manager 
-```
-
-*   Adjust host paths for `config.yaml`, `data-directory`, and `backup/storage`.
-*   Ensure paths inside the container (`/config/config.yaml`, `/data`, `/backup`) align with your `config.yaml` settings (`vaultwarden.data_dir`, `backup.destination.path`).
-*   **Security Warning:** Mounting the Docker socket grants high privileges.
-*   View logs with `docker logs vaultwarden-backup`.
-
-**Running a Restore Task (`docker run`):**
-
-Restore is a manual, one-off task using a temporary container.
-
-*   Mount:
-    *   Docker socket.
-    *   `config.yaml` (read-only).
-    *   Backup storage (read-only).
-    *   **Parent directory** of the host restore location (read-write).
-
-```bash
-# Make sure Vaultwarden container is stopped if restoring to its current data dir!
-# docker stop <your-vaultwarden-container-name>
-
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v $(pwd)/config.yaml:/config/config.yaml:ro \
-  -v /path/to/your/backup/storage:/backup:ro `# Mount backup storage read-only` \
-  -v /path/to/vaultwarden/host/parent-directory:/target `# Mount parent of data dir RW` \
-  vaultwarden-backup-manager restore \
-    --config /config/config.yaml \
-    --backup-id latest `# Or a specific ID` \
-    --target-dir /target/data_dir_name `# Path INSIDE container where data should be restored` \
-    # --yes # Add this to skip confirmation (DANGEROUS!)
-```
-
-*   Adjust host paths and `--target-dir` (which is the path *inside* the container).
-*   The script attempts to stop/start the container from `config.yaml`.
-*   The script needs write access to the target mount (`/target`).
+    *   The Vaultwarden *host* data directory.
+    *   The *host* backup storage directory.
+    *   For restore: The *parent* directory of the host restore location.
+*   Ensure the **target paths** inside the container (e.g., `/config/config.yaml`, `/data`, `/backup`) match the paths specified in your `config.yaml`.
+*   **Security Warning:** Mounting the Docker socket (`/var/run/docker.sock`) grants the container significant privileges on your host system. Understand the implications before using it.
 
 ### Using `docker compose`
 
-Two Docker Compose files are provided:
-*   `docker-compose.yaml`: For running the continuous backup service.
+Two Docker Compose files are provided for convenience:
+
+*   `docker-compose.yaml`: For running the continuous backup service (uses the scheduler).
 *   `docker-compose.restore.yaml`: For executing a one-off restore task.
 
 **Running the Backup Service (`docker-compose.yaml`):**
 
-1.  Edit `docker-compose.yaml`: Set the correct `image` tag and adjust the host paths in the `volumes` section.
-2.  Edit `config.yaml`: Set `backup.schedule.interval_minutes` to your desired frequency (e.g., `60` for hourly, `1440` for daily).
+1.  Edit `docker-compose.yaml`:
+    *   Verify the `image:` tag.
+    *   **Crucially**, set the correct **host paths** (left side) in the `volumes:` section for `config.yaml`, the Vaultwarden data directory, and the backup storage directory.
+2.  Edit `config.yaml`: Ensure paths like `vaultwarden.data_dir` and `backup.destination.path` match the **target paths** (right side) in the `docker-compose.yaml` volumes. Also configure `backup.schedule.interval_minutes`.
 3.  Start the backup service in the background:
     ```bash
     docker compose up -d backup
@@ -235,30 +238,37 @@ Two Docker Compose files are provided:
     ```
 5.  Stop the service:
     ```bash
-    # This stops and removes the container defined in docker-compose.yaml
     docker compose down
     ```
 
 **Running a Restore Task (`docker-compose.restore.yaml`):**
 
-1.  Edit `docker-compose.restore.yaml`: Ensure the `image` tag and host paths in the `volumes` section are correct. Make sure the config file mounted is the *same one* used for backups.
-2.  Run the restore task using `docker compose -f docker-compose.restore.yaml run`. The script command (`restore`) and its arguments are appended after the service name (`restore`).
-
+1.  Edit `docker-compose.restore.yaml`:
+    *   Verify the `image:` tag.
+    *   Ensure the **host paths** in the `volumes` section are correct, especially the backup storage and the *parent* directory for the restore target.
+    *   Make sure the `config.yaml` mounted is the *same one* used for backups.
+2.  Run the restore task using `docker compose -f docker-compose.restore.yaml run restore ...`. The script command (`restore`) and its arguments are appended after the service name (`restore`).
     ```bash
-    # Make sure Vaultwarden container is stopped if restoring to its current data dir!
+    # Make sure Vaultwarden container is stopped if restoring to its live data dir!
     # docker stop <your-vaultwarden-container-name>
 
-    # Example: Restore latest backup
-    docker compose -f docker-compose.restore.yaml run --rm restore \
+    # Example: Restore latest backup, prompting for confirmation
+    docker compose -f docker-compose.restore.yaml run --rm restore \\
       restore --config /config/config.yaml --backup-id latest --target-dir /target/data_dir_name
 
     # Example: Restore specific backup, skipping confirmation
-    docker compose -f docker-compose.restore.yaml run --rm restore \
-      restore --config /config/config.yaml --backup-id 20230115T103000 --target-dir /target/data_dir_name --yes
+    docker compose -f docker-compose.restore.yaml run --rm restore \\
+      restore --config /config/config.yaml --backup-id <TIMESTAMP_ID> --target-dir /target/data_dir_name --yes
     ```
-
 *   `-f docker-compose.restore.yaml` specifies the file to use.
-*   `run --rm restore` tells compose to run the `restore` service defined in that file and remove the container (`--rm`) when finished.
-*   The subsequent `restore --config ...` are the arguments passed to the `bw_manager.py` script inside the container.
+*   `run --rm restore` tells compose to run the `restore` service defined in that file, execute the command provided after it, and remove the container (`--rm`) when finished.
 *   Adjust the command arguments (`--backup-id`, `--target-dir`, `--yes`) as needed.
-*   Remember to replace `/target/data_dir_name` with the correct path inside the container, corresponding to the host path mounted to `/target`.
+*   Remember to replace `/target/data_dir_name` with the correct path *inside the container*, corresponding to the desired subdirectory within the host path mounted to `/target`.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details (or refer to `license` field in `pyproject.toml`).
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues on the [primary repository](https://gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup).

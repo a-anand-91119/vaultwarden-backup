@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vaultwarden-backup-manager"
+version = "0.0.1"
+authors = [
+  { name="A Anand", email="a.anand.91119@notyouraverage.dev" },
+]
+description = "A tool to backup and restore Vaultwarden Docker instances."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+keywords = ["vaultwarden", "bitwarden", "backup", "restore", "docker"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: System :: Archiving :: Backup",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+   "PyYAML==6.0.1",
+   "schedule==1.2.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+Homepage = "https://gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup"
+Repository = "https://gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup"
+"GitHub Mirror" = "https://github.com/a-anand-91119/vaultwarden-backup"
+"GitLab.com Mirror" = "https://gitlab.com/repo-syncer-managed-groups/vaultwarden-backup"
+
+[project.optional-dependencies]
+test = [
+    "pytest==8.3.5",
+]
+
+[project.scripts]
+vaultwarden-backup = "vaultwarden_backup_manager.__main__:main"

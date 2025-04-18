@@ -1,14 +1,32 @@
-image: quay.io/buildah/stable:latest
+image: python:3.11
 
 variables:
   IMAGE_TAG_BASE: $CI_REGISTRY_IMAGE
   STORAGE_DRIVER: vfs
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  key:
+    files:
+      - pyproject.toml
+  paths:
+    - .cache/pip
 
 stages:
+  - test
   - build
+
+run_tests:
+  stage: test
+  before_script:
+    - pip install --upgrade pip
+    - pip install ".[test]"
+  script:
+    - pytest
 
 build_and_push_image:
   stage: build
+  image: quay.io/buildah/stable:latest
   before_script:
     - echo "Logging in to GitLab Container Registry:$CI_REGISTRY"
     - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
