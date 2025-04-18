@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backup:
-    image: vaultwarden-backup-manager
+    image: registry.gitlab.notyouraverage.dev/a.anand.91119/vaultwarden-backup:latest
     container_name: vaultwarden-backup
     restart: unless-stopped
     environment:
