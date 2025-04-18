@@ -1,0 +1,57 @@
+# Bitwarden Backup Manager Configuration (YAML)
+
+backup:
+  # Path to the directory containing the 'bwdata' folder and 'bitwarden.sh' script
+  # Example: /opt/bitwarden
+  install_dir: /home/ubuntu/bitwarden/vw-data
+
+  # Path to the 'bwdata' directory (usually install_dir + /bwdata)
+  # Example: /opt/bitwarden/bwdata
+  # If omitted, it defaults to {install_dir}/bwdata
+  # bw_data_path: /opt/bitwarden/bwdata
+
+  # --- Backup Destination Settings ---
+  destination:
+    # Type of backup destination: 'local' is currently supported.
+    # Future options: 'ssh', 's3'
+    type: local
+
+    # Path to the directory where backup archives will be stored (for 'local' type)
+    # Example: /mnt/backups/bitwarden
+    path: /home/ubuntu/bitwarden/test/backups
+
+  # --- Encryption Settings ---
+  encryption:
+    # Enable GPG encryption for backups (true/false)
+    enabled: false
+    # GPG Recipient Key ID or Email (required if enabled=true)
+    # Example: mygpgkey@example.com or ABCDEF01
+    gpg_key_id: ""
+
+  # --- Retention Policy ---
+  retention:
+    # Number of daily backups to keep
+    daily: 7
+    # Number of weekly backups to keep (runs on Sunday)
+    weekly: 4
+    # Number of monthly backups to keep (runs on the 1st)
+    monthly: 6
+
+  # --- Restore Settings ---
+  restore:
+    # Temporary directory for downloading/extracting backups during restore
+    # Example: /tmp/bw_restore_temp
+    temp_dir: /tmp/bw_restore_temp
+
+    # --- Permissions ---
+    # User and group to set ownership on restored bwdata (requires sudo)
+    # Set these if different from the user running the script or the Bitwarden default.
+    # Leave blank or omit to skip explicit chown/chmod (restore might fail if permissions are wrong)
+    owner_user: ubuntu
+    owner_group: ubuntu
+
+notifications:
+  # Placeholder for future notification settings (e.g., email, webhook)
+  enabled: false
+  email_to: ""
+  webhook_url: "" 

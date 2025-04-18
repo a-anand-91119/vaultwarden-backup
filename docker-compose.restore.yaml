@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  restore:
+    # --- Manual Restore Task (Run as one-off command) ---
+    image: vaultwarden-backup-manager
+    environment:
+      - TZ=Asia/Kolkata
+      - VERBOSE_LOGGING=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config.yaml:/config/config.yaml:ro
+      # Mount host backup storage directory (read-only)
+      # !!! Replace with your actual host path !!!
+      - /path/to/your/backup/storage:/backup:ro
+      # Mount the PARENT directory of the target restore location
+      # !!! Replace with your actual host path !!!
+      - /path/to/vaultwarden/host/parent-directory:/target
+
+# The command and arguments are provided when running `docker compose run`
+# Example: docker compose -f docker-compose.restore.yaml run --rm restore restore --config /config/config.yaml --backup-id latest --target-dir /target/data_dir_name 

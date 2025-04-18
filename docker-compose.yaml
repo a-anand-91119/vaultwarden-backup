@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backup:
+    image: vaultwarden-backup-manager
+    container_name: vaultwarden-backup
+    restart: unless-stopped
+    environment:
+      # Optional: Override default cron schedule (defaults to 3:00 AM daily)
+      - CRON_SCHEDULE=0 3 * * * # Example: Run daily at 3:00 AM
+      - VERBOSE_LOGGING=false
+      # Optional: Set container timezone
+      - TZ=Asia/Kolkata
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config.yaml:/config/config.yaml:ro
+      # Mount host Vaultwarden data directory (read-only for backup)
+      # !!! Replace with your actual host path !!!
+      - /path/to/vaultwarden/host/data-directory:/data:ro
+      # Mount host backup storage directory
+      # !!! Replace with your actual host path !!!
+      - /path/to/your/backup/storage:/backup

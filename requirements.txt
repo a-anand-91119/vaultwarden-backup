@@ -1,0 +1,11 @@
+# No external libraries required for the initial implementation (using standard library + external CLI tools)
+# Future possibilities:
+# python-dotenv
+# python-gnupg
+# boto3
+# google-cloud-storage
+# azure-storage-blob
+# paramiko
+# docker
+
+PyYAML>=5.4 # Using >=5.4 for safe_load availability and security patches

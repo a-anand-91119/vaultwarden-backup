@@ -1,0 +1,26 @@
+image: quay.io/buildah/stable:latest
+
+variables:
+  IMAGE_TAG_BASE: $CI_REGISTRY_IMAGE
+  STORAGE_DRIVER: vfs
+
+before_script:
+  - echo "Logging in to GitLab Container Registry: $CI_REGISTRY"
+  - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+
+stages:
+  - build
+
+build_and_push_image:
+  stage: build
+  script:
+    - echo "Building image using Buildah..."
+    - buildah bud --storage-driver $STORAGE_DRIVER -t $IMAGE_TAG_BASE:$CI_COMMIT_SHORT_SHA .
+    - buildah tag --storage-driver $STORAGE_DRIVER $IMAGE_TAG_BASE:$CI_COMMIT_SHORT_SHA $IMAGE_TAG_BASE:latest
+    - echo "Pushing image to $CI_REGISTRY_IMAGE..."
+    - buildah push --storage-driver $STORAGE_DRIVER $IMAGE_TAG_BASE:$CI_COMMIT_SHORT_SHA
+    - buildah push --storage-driver $STORAGE_DRIVER $IMAGE_TAG_BASE:latest
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG' 
