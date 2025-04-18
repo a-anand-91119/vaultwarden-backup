@@ -49,18 +49,24 @@ fi
 # Build the command to run
 BACKUP_CMD="${PYTHON_CMD} ${SCRIPT_PATH} backup --config ${CONFIG_PATH} --log-file ${LOG_PATH} ${VERBOSE_FLAG}"
 
-echo "Setting up cron schedule: '${CRON_SCHEDULE}'" 
+echo "Setting up cron schedule: '${CRON_SCHEDULE}' for user root" 
 echo "Command: ${BACKUP_CMD}"
 
-# Create the crontab file
+# Create the crontab file in /etc/cron.d/
+# Files in /etc/cron.d need the user field (root in this case)
+CRON_FILE="/etc/cron.d/backup-job"
+
 # Add SHELL variable for safety, ensure PATH includes docker binary location
 # Cron usually has a minimal environment, explicitly set PATH
 DOCKER_PATH=$(which docker || echo "/usr/bin/docker") # Find docker path
 CRON_ENV="SHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-echo -e "${CRON_ENV}\n${CRON_SCHEDULE} ${BACKUP_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/2" > /etc/crontabs/root
 
-# Set correct permissions for crontab file
-chmod 0644 /etc/crontabs/root
+# Ensure the file ends with a newline for cron
+echo -e "${CRON_ENV}\n${CRON_SCHEDULE} root ${BACKUP_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/2\n" > ${CRON_FILE}
+
+# Set correct permissions for crontab file in /etc/cron.d/
+# Typically requires root ownership and restricted write permissions
+chmod 0644 ${CRON_FILE}
 
 # --- Start Cron Daemon ---
 echo "Starting cron daemon..."
