@@ -9,6 +9,9 @@
 #   (e.g., '/data' and '/backup' respectively, based on the examples provided).
 
 vaultwarden:
+  # skip docker container start/stop operations during backup/restore
+  skip_start_stop: false
+
   # Name or ID of the running Vaultwarden Docker container (required)
   # Example: vaultwarden
   container_name: vaultwarden

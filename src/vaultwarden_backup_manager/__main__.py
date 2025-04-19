@@ -55,8 +55,8 @@ def main():
         else:
             logger.error(f"Unknown command: {args.command}")
 
-    except ConfigError:
-        pass
+    except ConfigError as e:
+        logger.critical(f"Invalid config provided: {e}")
     except FileNotFoundError as e:
         # Specific file not found errors (e.g., backup ID, data dir)
         logger.critical(f"File not found error: {e}")

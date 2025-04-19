@@ -42,6 +42,13 @@ class ConfigLoader:
             if not vw_cfg.get('data_dir') or not isinstance(vw_cfg['data_dir'], str):
                  raise ConfigError("Missing or invalid 'data_dir' (string) in 'vaultwarden' section.")
 
+            # Validate skip_start_stop (optional, defaults to False)
+            skip_start_stop = vw_cfg.get('skip_start_stop', False) # Get value or default
+            if not isinstance(skip_start_stop, bool):
+                raise ConfigError("Invalid type for 'skip_start_stop' in 'vaultwarden' section. Expected a boolean (true/false).")
+            # Ensure the value in the config dict is the potentially defaulted value
+            vw_cfg['skip_start_stop'] = skip_start_stop
+
             # Backup validation
             backup_cfg = config['backup']
             required_backup_keys = ['schedule', 'destination', 'retention', 'restore']

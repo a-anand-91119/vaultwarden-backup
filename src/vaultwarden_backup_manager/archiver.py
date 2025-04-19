@@ -5,6 +5,7 @@ from .utils import run_command # Use relative import
 
 logger = logging.getLogger(__name__)
 
+
 class Archiver:
     """Handles creation and encryption/decryption of archives."""
 
@@ -85,4 +86,4 @@ class Archiver:
             logger.info("Extraction complete.")
         except Exception as e:
             logger.error(f"Extraction failed: {e}")
-            raise 
+            raise

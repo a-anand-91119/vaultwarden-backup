@@ -19,9 +19,12 @@ class VaultwardenBackupManager:
     def __init__(self, config_path):
         self.config_loader: ConfigLoader = ConfigLoader(config_path)
         self.config = self.config_loader.get_config()
-        self.docker_controller = DockerController(self.config['vaultwarden']['container_name'])
-        self.archiver = Archiver(self.config)
-        self.store = BackupStore(self.config)
+        self.docker_controller = DockerController(
+            skip_ops=self.config['vaultwarden']['skip_start_stop'],
+            container_name=self.config['vaultwarden']['container_name']
+        )
+        self.archiver: Archiver = Archiver(self.config)
+        self.store: BackupStore = BackupStore(self.config)
 
     @staticmethod
     def _set_permissions(target_path, uid, gid):
