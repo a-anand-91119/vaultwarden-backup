@@ -28,18 +28,15 @@ RUN apt-get update && \
     # Clean up
     rm -rf /var/lib/apt/lists/*
 
-# Copy only pyproject.toml first to leverage Docker layer caching
+# Copy requirements first for cache optimization
 COPY pyproject.toml /app/
-
-# Install Python dependencies from pyproject.toml
-# --no-cache-dir reduces image size
-# We only install runtime dependencies, not test dependencies
-# The '.' tells pip to install the package defined in pyproject.toml
-RUN pip install --no-cache-dir .
-
-# Now copy the rest of the application code
+# Copy necessary source files needed for the build/install step
 COPY README.md /app/
 COPY src/ /app/src/
+
+# Install Python dependencies (including the project itself)
+# The '.' tells pip to install the package defined in pyproject.toml
+RUN pip install --no-cache-dir .
 
 # No need to chmod entrypoint anymore
 # RUN chmod +x entrypoint.sh

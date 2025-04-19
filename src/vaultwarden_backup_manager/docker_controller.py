@@ -1,7 +1,8 @@
 import logging
-from .utils import run_command # Use relative import
+from .utils import run_command
 
 logger = logging.getLogger(__name__)
+
 
 class DockerController:
     """Controls the Vaultwarden Docker container."""
@@ -24,4 +25,4 @@ class DockerController:
         return self._run_docker_command("stop")
 
     def start(self):
-        return self._run_docker_command("start") 
+        return self._run_docker_command("start")
